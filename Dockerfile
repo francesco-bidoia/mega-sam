@@ -5,7 +5,7 @@
 ## https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/
 
 # Use the base image with PyTorch and CUDA support
-FROM pytorch/pytorch:2.0.1-cuda11.8-devel
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
 
 # NOTE:
 # Building the libraries for this repository requires cuda *DURING BUILD PHASE*, therefore:
