@@ -5,7 +5,7 @@
 ## https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/
 
 # Use the base image with PyTorch and CUDA support
-FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
+FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-devel
 
 # NOTE:
 # Building the libraries for this repository requires cuda *DURING BUILD PHASE*, therefore:
@@ -16,79 +16,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6"
 
 
-
 COPY  environment.yml /tmp/environment.yml
 WORKDIR /tmp/
 
 RUN conda env create -f environment.yml && \
     conda init bash && exec bash
 
-# # Update Conda and use new solver
-# # RUN conda update -n base conda && \
-# RUN conda install -n base conda-libmamba-solver && \
-#     conda config --set solver libmamba && \
-#     conda init bash && exec bash
+RUN conda run -n mega_sam python -m pip install -U xformers --index-url https://download.pytorch.org/whl/cu126
 
-# RUN pip install pycolmap==3.11.1 open3d==0.19.0
+COPY base /tmp/base/
+WORKDIR /tmp/base/
 
-# # Install colmap
-# RUN apt update && apt-get install -y \
-#     git \
-#     ffmpeg \
-#     cmake \
-#     ninja-build \
-#     build-essential \
-#     libboost-program-options-dev \
-#     libboost-filesystem-dev \
-#     libboost-graph-dev \
-#     libboost-system-dev \
-#     libeigen3-dev \
-#     libflann-dev \
-#     libfreeimage-dev \
-#     libmetis-dev \
-#     libgoogle-glog-dev \
-#     libgtest-dev \
-#     libsqlite3-dev \
-#     libglew-dev \
-#     qtbase5-dev \
-#     libqt5opengl5-dev \
-#     libcgal-dev \
-#     libceres-dev \
-#     libomp-dev
+# RUN conda run -n mega_sam python setup.py install
 
-# WORKDIR /tmp/
-# RUN git clone https://github.com/colmap/colmap.git
-# WORKDIR /tmp/colmap
-
-# RUN git checkout 682ea9ac4020a143047758739259b3ff04dabe8d &&\
-#     mkdir build && cd build &&\
-#     cmake .. -GNinja \
-#     -DCMAKE_CUDA_ARCHITECTURES=all-major \
-#     -DOPENMP_ENABLED=ON && \
-#     ninja &&\
-#     ninja install
-
-# # Install DepthAnything dependencies
-# COPY ./submodules/DepthAnythingV2_docker/requirements.txt /tmp/requirements.txt
-# WORKDIR /tmp/
-
-# RUN pip install -r requirements.txt
-# RUN apt-get update && apt-get install -y libgl1 libglib2.0-0
-
-# # Install gsplat
-# COPY ./environment_gsplat.yml ./environment_gsplat.yml
-# RUN conda env create --file environment_gsplat.yml
-
-# RUN conda run -n gsplat python -m pip install ninja numpy jaxtyping rich fsspec
-# COPY ./requirements_gsplat.txt ./requirements_gsplat.txt
-# RUN conda run -n gsplat python -m pip install -r ./requirements_gsplat.txt
-
-# RUN conda run -n gsplat python -m pip install gsplat --index-url https://docs.gsplat.studio/whl/pt24cu124
-
-# COPY ./submodules/gsplat/examples/requirements.txt ./requirements.txt
-# RUN conda run -n gsplat python -m pip install -r ./requirements.txt
-
-# WORKDIR /v2gs
+WORKDIR /mega_sam
 
 # This error occurs because there’s a conflict between the threading layer used
 # by Intel MKL (Math Kernel Library) and the libgomp library, 

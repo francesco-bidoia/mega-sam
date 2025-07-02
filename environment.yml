@@ -7,9 +7,7 @@ channels:
 dependencies:
   - python=3.10
   - pip
-  - conda-forge::cudatoolkit=11.8
-  - pytorch::pytorch=2.0.1
-  - pytorch::torchvision==0.15.2
+  - pytorch::torchvision>=0.15.2
   - pip:
     - opencv-python-headless==4.9.0.80
     - tqdm==4.67.1
