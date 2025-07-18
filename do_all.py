@@ -68,7 +68,7 @@ def main():
     if not unidepth_out.exists():
         run_cmd([
             'python', 'UniDepth/scripts/demo_mega-sam.py',
-            '--scene-name', '',
+            '--scene-name', scene_name,
             '--img-path', str(frames_dir),
             '--outdir', str(unidepth_out)
         ], cwd=root_dir)
@@ -86,7 +86,7 @@ def main():
             'python', 'camera_tracking_scripts/test_demo.py',
             '--datapath', str(frames_dir),
             '--weights', 'checkpoints/megasam_final.pth',
-            '--scene_name', '',
+            '--scene_name', scene_name,
             '--mono_depth_path', str(source_path / 'mono_depth'),
             '--metric_depth_path', str(source_path / 'unidepth'),
         ], cwd=root_dir)
@@ -100,7 +100,7 @@ def main():
             'python', 'cvd_opt/preprocess_flow.py',
             '--datapath', str(frames_dir),
             '--model', 'cvd_opt/raft-things.pth',
-            '--scene_name', '',
+            '--scene_name', scene_name,
             '--mixed_precision'
         ], cwd=root_dir)
 
@@ -111,7 +111,7 @@ def main():
     if not cvd_npz.exists():
         run_cmd([
             'python', 'cvd_opt/cvd_opt.py',
-            '--scene_name', '',
+            '--scene_name', scene_name,
             '--w_grad', '2.0',
             '--w_normal', '5.0',
             '--output_dir', str(source_path / 'cvd_output')
@@ -134,13 +134,13 @@ def main():
             shutil.move(str(f), dst / f.name)
         shutil.rmtree(cache_src)
 
-    out_file = root_dir / 'outputs' / '_droid.npz'
+    out_file = root_dir / 'outputs' / f'{scene_name}_droid.npz'
     if out_file.exists():
         dst = source_path / 'outputs'
         dst.mkdir(parents=True, exist_ok=True)
         shutil.move(str(out_file), dst / f'{scene_name}_droid.npz')
 
-    cvd_file = root_dir / 'outputs_cvd' / '_sgd_cvd_hr.npz'
+    cvd_file = root_dir / 'outputs_cvd' / f'{scene_name}_sgd_cvd_hr.npz'
     if cvd_file.exists():
         dst = source_path / 'outputs_cvd'
         dst.mkdir(parents=True, exist_ok=True)
