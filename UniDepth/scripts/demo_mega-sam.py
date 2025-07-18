@@ -18,9 +18,7 @@ def demo(model, args):
   # os.makedirs(outdir, exist_ok=True)
 
   # for scene_name in scene_names:
-  scene_name = args.scene_name
-  outdir_scene = os.path.join(outdir, scene_name)
-  os.makedirs(outdir_scene, exist_ok=True)
+  os.makedirs(outdir, exist_ok=True)
   # img_path_list = sorted(glob.glob("/home/zhengqili/filestore/DAVIS/DAVIS/JPEGImages/480p/%s/*.jpg"%scene_name))
   img_path_list = sorted(glob.glob(os.path.join(args.img_path, "*.jpg")))
   img_path_list += sorted(glob.glob(os.path.join(args.img_path, "*.png")))
@@ -58,7 +56,7 @@ def demo(model, args):
     fovs.append(fov_)
     # breakpoint()
     np.savez(
-        os.path.join(outdir_scene, img_path.split("/")[-1][:-4] + ".npz"),
+        os.path.join(outdir, os.path.basename(img_path)[:-4] + ".npz"),
         depth=np.float32(depth),
         fov=fov_,
     )
@@ -68,7 +66,6 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--img-path", type=str)
   parser.add_argument("--outdir", type=str, default="./vis_depth")
-  parser.add_argument("--scene-name", type=str)
 
   args = parser.parse_args()
 

@@ -39,8 +39,6 @@ def main():
     if not mp4_files:
         raise FileNotFoundError(f'No mp4 file found in {source_path}')
     video_path = mp4_files[0]
-    scene_name = Path(video_path).stem
-
     frames_dir = source_path / 'images'
     if args.clean and frames_dir.exists():
         shutil.rmtree(frames_dir)
@@ -68,7 +66,6 @@ def main():
     if not unidepth_out.exists():
         run_cmd([
             'python', 'UniDepth/scripts/demo_mega-sam.py',
-            '--scene-name', scene_name,
             '--img-path', str(frames_dir),
             '--outdir', str(unidepth_out)
         ], cwd=root_dir)
@@ -77,7 +74,7 @@ def main():
     if args.clean and recon_dir.exists():
         shutil.rmtree(recon_dir)
 
-    droid_out = source_path / 'outputs' / f'{scene_name}_droid.npz'
+    droid_out = source_path / 'outputs' / 'droid.npz'
     if args.clean and droid_out.exists():
         droid_out.unlink()
 
@@ -86,7 +83,7 @@ def main():
             'python', 'camera_tracking_scripts/test_demo.py',
             '--datapath', str(frames_dir),
             '--weights', 'checkpoints/megasam_final.pth',
-            '--scene_name', scene_name,
+            '--outdir', str(source_path),
             '--mono_depth_path', str(source_path / 'mono_depth'),
             '--metric_depth_path', str(source_path / 'unidepth'),
         ], cwd=root_dir)
@@ -100,57 +97,31 @@ def main():
             'python', 'cvd_opt/preprocess_flow.py',
             '--datapath', str(frames_dir),
             '--model', 'cvd_opt/raft-things.pth',
-            '--scene_name', scene_name,
+            '--output_dir', str(cache_dir),
             '--mixed_precision'
         ], cwd=root_dir)
 
-    cvd_npz = source_path / 'outputs_cvd' / f'{scene_name}_sgd_cvd_hr.npz'
+    cvd_npz = source_path / 'outputs_cvd' / 'sgd_cvd_hr.npz'
     if args.clean and cvd_npz.exists():
         cvd_npz.unlink()
 
     if not cvd_npz.exists():
         run_cmd([
             'python', 'cvd_opt/cvd_opt.py',
-            '--scene_name', scene_name,
             '--w_grad', '2.0',
             '--w_normal', '5.0',
-            '--output_dir', str(source_path / 'cvd_output')
+            '--output_dir', str(source_path / 'cvd_output'),
+            '--recon_dir', str(source_path / 'reconstructions'),
+            '--cache_dir', str(source_path / 'cache_flow')
         ], cwd=root_dir)
 
-    # Move generated folders to source_path
-    recon_src = root_dir / 'reconstructions'
-    if recon_src.exists():
-        dst = source_path / 'reconstructions'
-        dst.mkdir(parents=True, exist_ok=True)
-        for f in recon_src.iterdir():
-            shutil.move(str(f), dst / f.name)
-        shutil.rmtree(recon_src)
-
-    cache_src = root_dir / 'cache_flow'
-    if cache_src.exists():
-        dst = source_path / 'cache_flow'
-        dst.mkdir(parents=True, exist_ok=True)
-        for f in cache_src.iterdir():
-            shutil.move(str(f), dst / f.name)
-        shutil.rmtree(cache_src)
-
-    out_file = root_dir / 'outputs' / f'{scene_name}_droid.npz'
-    if out_file.exists():
-        dst = source_path / 'outputs'
-        dst.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(out_file), dst / f'{scene_name}_droid.npz')
-
-    cvd_file = root_dir / 'outputs_cvd' / f'{scene_name}_sgd_cvd_hr.npz'
-    if cvd_file.exists():
-        dst = source_path / 'outputs_cvd'
-        dst.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(cvd_file), dst / f'{scene_name}_sgd_cvd_hr.npz')
-        npz_for_colmap = dst / f'{scene_name}_sgd_cvd_hr.npz'
+    if cvd_npz.exists():
+        npz_for_colmap = cvd_npz
     else:
-        npz_for_colmap = source_path / 'outputs' / f'{scene_name}_droid.npz'
+        npz_for_colmap = droid_out
 
     # Export final results to COLMAP format
-    colmap_out = root_dir / 'colmap_temp' / scene_name
+    colmap_out = root_dir / 'colmap_temp'
     run_cmd([
         'python', 'export_to_colmap.py',
         '--npz', str(npz_for_colmap),
@@ -164,7 +135,7 @@ def main():
         if dst.exists():
             shutil.rmtree(dst)
         shutil.move(str(sparse_src), dst)
-    shutil.rmtree(colmap_out.parent, ignore_errors=True)
+    shutil.rmtree(colmap_out, ignore_errors=True)
 
 
 if __name__ == '__main__':

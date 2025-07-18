@@ -50,14 +50,13 @@ def show_image(img):
 def image_stream(
     image_list,
     mono_disp_list,
-    scene_name,
     use_depth=False,
     aligns=None,
     K=None,
     stride=1,
 ):
   """image generator."""
-  del scene_name, stride
+  del stride
 
   fx, fy, cx, cy = (
       K[0, 0],
@@ -115,7 +114,7 @@ def image_stream(
 
 
 def save_full_reconstruction(
-    droid, full_traj, rgb_list, senor_depth_list, motion_prob, scene_name
+    droid, full_traj, rgb_list, senor_depth_list, motion_prob, outdir
 ):
   """Save full reconstruction."""
   from pathlib import Path
@@ -126,16 +125,13 @@ def save_full_reconstruction(
   poses = full_traj  # .cpu().numpy()
   intrinsics = droid.video.intrinsics[:t].cpu().numpy()
 
-  Path("reconstructions/{}".format(scene_name)).mkdir(
-      parents=True, exist_ok=True
-  )
-  np.save("reconstructions/{}/images.npy".format(scene_name), images)
-  np.save("reconstructions/{}/disps.npy".format(scene_name), disps)
-  np.save("reconstructions/{}/poses.npy".format(scene_name), poses)
-  np.save(
-      "reconstructions/{}/intrinsics.npy".format(scene_name), intrinsics * 8.0
-  )
-  np.save("reconstructions/{}/motion_prob.npy".format(scene_name), motion_prob)
+  recon_dir = Path(outdir) / "reconstructions"
+  recon_dir.mkdir(parents=True, exist_ok=True)
+  np.save(recon_dir / "images.npy", images)
+  np.save(recon_dir / "disps.npy", disps)
+  np.save(recon_dir / "poses.npy", poses)
+  np.save(recon_dir / "intrinsics.npy", intrinsics * 8.0)
+  np.save(recon_dir / "motion_prob.npy", motion_prob)
 
   intrinsics = intrinsics[0] * 8.0
   poses_th = torch.as_tensor(poses, device="cpu")
@@ -151,11 +147,12 @@ def save_full_reconstruction(
   print("disp_data ", disps.shape)
 
   max_frames = min(1000, images.shape[0])
-  print("outputs/%s_droid.npz" % scene_name)
-  Path("outputs").mkdir(parents=True, exist_ok=True)
+  out_npz_dir = Path(outdir) / "outputs"
+  out_npz_dir.mkdir(parents=True, exist_ok=True)
+  print(out_npz_dir / "droid.npz")
 
   np.savez(
-      "outputs/%s_droid.npz" % scene_name,
+      out_npz_dir / "droid.npz",
       images=np.uint8(images[:max_frames, ::-1, ...].transpose(0, 2, 3, 1)),
       depths=np.float32(1.0 / disps[:max_frames, ...]),
       intrinsic=K,
@@ -185,7 +182,7 @@ if __name__ == "__main__":
   parser.add_argument("--stereo", action="store_true")
   parser.add_argument("--depth", action="store_true")
   parser.add_argument("--upsample", action="store_true")
-  parser.add_argument("--scene_name", help="scene_name")
+  parser.add_argument("--outdir", required=True)
 
   parser.add_argument("--backend_thresh", type=float, default=16.0)
   parser.add_argument("--backend_radius", type=int, default=2)
@@ -200,8 +197,6 @@ if __name__ == "__main__":
   print("Running evaluation on {}".format(args.datapath))
   print(args)
 
-  scene_name = args.scene_name.split("/")[-1]
-
   tstamps = []
   rgb_list = []
   senor_depth_list = []
@@ -213,12 +208,12 @@ if __name__ == "__main__":
   # NOTE Mono is inverse depth, but metric-depth is depth!
   mono_disp_paths = sorted(
       glob.glob(
-          os.path.join("%s/%s" % (args.mono_depth_path, scene_name), "*.npy")
+          os.path.join(args.mono_depth_path, "*.npy")
       )
   )
   metric_depth_paths = sorted(
       glob.glob(
-          os.path.join("%s/%s" % (args.metric_depth_path, scene_name), "*.npz")
+          os.path.join(args.metric_depth_path, "*.npz")
       )
   )
 
@@ -307,7 +302,6 @@ if __name__ == "__main__":
       image_stream(
           image_list,
           mono_disp_list,
-          scene_name,
           use_depth=True,
           aligns=aligns,
           K=K,
@@ -332,22 +326,19 @@ if __name__ == "__main__":
       image_stream(
           image_list,
           mono_disp_list,
-          scene_name,
           use_depth=True,
           aligns=aligns,
           K=K,
       ),
       _opt_intr=True,
       full_ba=True,
-      scene_name=scene_name,
   )
 
-  if args.scene_name is not None:
-    save_full_reconstruction(
-        droid,
-        traj_est,
-        rgb_list,
-        senor_depth_list,
-        motion_prob,
-        args.scene_name,
-    )
+  save_full_reconstruction(
+      droid,
+      traj_est,
+      rgb_list,
+      senor_depth_list,
+      motion_prob,
+      args.outdir,
+  )
