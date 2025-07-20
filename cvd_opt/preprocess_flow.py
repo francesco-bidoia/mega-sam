@@ -63,8 +63,8 @@ if __name__ == '__main__':
       '--model', default='raft-things.pth', help='restore checkpoint'
   )
   parser.add_argument('--small', action='store_true', help='use small model')
-  parser.add_argument('--scene_name', type=str, help='use small model')
   parser.add_argument('--datapath')
+  parser.add_argument('--output_dir', required=True)
 
   parser.add_argument('--path', help='dataset for evaluation')
   parser.add_argument(
@@ -97,7 +97,6 @@ if __name__ == '__main__':
   flow_model.cuda()  # .eval()
   flow_model.eval()
 
-  scene_name = args.scene_name
   image_list = sorted(
       glob.glob(os.path.join(args.datapath, '*.png'))
   )  # [::stride]
@@ -206,7 +205,8 @@ if __name__ == '__main__':
   iijj = np.stack((ii, jj), axis=0)
   flows_high = np.array(flows_arr_up).transpose(0, 3, 1, 2)
   flow_masks_high = np.array(masks_arr_up)[:, None, ...]
-  Path('./cache_flow/%s' % scene_name).mkdir(parents=True, exist_ok=True)
-  np.save('./cache_flow/%s/flows.npy' % scene_name, np.float16(flows_high))
-  np.save('./cache_flow/%s/flows_masks.npy' % scene_name, flow_masks_high)
-  np.save('./cache_flow/%s/ii-jj.npy' % scene_name, iijj)
+  outdir = Path(args.output_dir)
+  outdir.mkdir(parents=True, exist_ok=True)
+  np.save(outdir / 'flows.npy', np.float16(flows_high))
+  np.save(outdir / 'flows_masks.npy', flow_masks_high)
+  np.save(outdir / 'ii-jj.npy', iijj)

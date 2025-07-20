@@ -239,40 +239,34 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--w_grad", type=float, default=2.0, help="w_grad")
   parser.add_argument("--w_normal", type=float, default=6.0, help="w_normal")
-  parser.add_argument(
-      "--output_dir", type=str, default="outputs_cvd", help="outputs direcotry"
-  )
-  parser.add_argument("--scene_name", type=str, help="scene name")
+  parser.add_argument("--output_dir", type=str, required=True, help="outputs directory")
+  parser.add_argument("--recon_dir", type=str, required=True, help="reconstruction dir")
+  parser.add_argument("--cache_dir", type=str, required=True, help="cache flow dir")
 
   args = parser.parse_args()
 
-  cache_dir = "./cache_flow"
-  rootdir = os.getcwd() + "/reconstructions"
-
+  cache_dir = args.cache_dir
+  recon_dir = args.recon_dir
   output_dir = args.output_dir
-  scene_name = args.scene_name
-  print("***************************** ", scene_name)
-  img_data = np.load(os.path.join(rootdir, scene_name, "images.npy"))[
+
+  print("*****************************")
+  img_data = np.load(os.path.join(recon_dir, "images.npy"))[
       :, ::-1, ...
   ]
   disp_data = (
       np.load(
-          os.path.join(rootdir, scene_name.replace("_opt", ""), "disps.npy")
+          os.path.join(recon_dir, "disps.npy")
       )
       + 1e-6
   )
-  intrinsics = np.load(os.path.join(rootdir, scene_name, "intrinsics.npy"))
-  poses = np.load(os.path.join(rootdir, scene_name, "poses.npy"))
-  mot_prob = np.load(os.path.join(rootdir, scene_name, "motion_prob.npy"))
+  intrinsics = np.load(os.path.join(recon_dir, "intrinsics.npy"))
+  poses = np.load(os.path.join(recon_dir, "poses.npy"))
+  mot_prob = np.load(os.path.join(recon_dir, "motion_prob.npy"))
 
-  flows = np.load(
-      "%s/%s/flows.npy" % (cache_dir, scene_name), allow_pickle=True
-  )
-  flow_masks = np.load(
-      "%s/%s/flows_masks.npy" % (cache_dir, scene_name), allow_pickle=True
-  )
+  flows = np.load(os.path.join(cache_dir, 'flows.npy'), allow_pickle=True)
+  flow_masks = np.load(os.path.join(cache_dir, 'flows_masks.npy'), allow_pickle=True)
   flow_masks = np.float32(flow_masks)
-  iijj = np.load("%s/%s/ii-jj.npy" % (cache_dir, scene_name), allow_pickle=True)
+  iijj = np.load(os.path.join(cache_dir, 'ii-jj.npy'), allow_pickle=True)
 
   intrinsics = intrinsics[0]
   poses_th = torch.as_tensor(poses, device="cpu").float().cuda()
@@ -449,7 +443,7 @@ if __name__ == "__main__":
 
   Path(output_dir).mkdir(parents=True, exist_ok=True)
   np.savez(
-      "%s/%s_sgd_cvd_hr.npz" % (output_dir, scene_name),
+      os.path.join(output_dir, "sgd_cvd_hr.npz"),
       images=np.uint8(img_data_pt.cpu().numpy().transpose(0, 2, 3, 1) * 255.0),
       depths=np.clip(np.float16(1.0 / disp_data_opt), 1e-3, 1e2),
       intrinsic=K_o.detach().cpu().numpy(),
