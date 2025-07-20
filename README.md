@@ -104,6 +104,44 @@ Anaconda.
 5.  Convert the optimized output to COLMAP text files:
     `python export_to_colmap.py --npz outputs_cvd/<scene>_sgd_cvd_hr.npz --frames frames/<scene> --outdir colmap/<scene>`
 
+### Running the full pipeline with `do_all.py`
+
+For a quick way to run all of the above steps on a single video you can
+use `do_all.py`.  Provide a directory containing a `.mp4` file and the script
+will create the necessary folders and run each stage sequentially.  The output
+structure inside `source_path` looks as follows:
+
+```
+<source_path>/
+ ├─ images/          # extracted frames
+ ├─ mono_depth/      # depth maps from Depth-Anything
+ ├─ unidepth/        # metric depth from UniDepth
+ ├─ reconstructions/ # camera tracking results
+ ├─ outputs/<scene>_droid.npz
+ ├─ cache_flow/      # RAFT optical flow caches
+ ├─ cvd_output/ or outputs_cvd/<scene>_sgd_cvd_hr.npz
+ └─ sparse/          # COLMAP text export
+```
+
+Use `--clean` to delete old results and recompute everything.  Example usage:
+
+```bash
+python do_all.py --source_path /path/to/scene
+```
+
+### Visualizing CVD results
+
+`visualize_cvd_output.py` provides an interactive viewer for the `.npz` files
+produced by `cvd_opt.py`.  Install the optional `viser` dependency (`pip install
+viser`) and run:
+
+```bash
+python visualize_cvd_output.py outputs_cvd/<scene>_sgd_cvd_hr.npz
+```
+
+Use the slider or "Play" button in the UI to inspect the point cloud and camera
+trajectory for each frame.
+
 ### Contact
 
 For any questions related to our paper, please send email to zl548@cornell.edu.
