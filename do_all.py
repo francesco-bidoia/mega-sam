@@ -20,7 +20,7 @@ def extract_frames(video_path, out_dir):
         "-vsync",
         "0",
         "-vf",
-        "fps=1",
+        "fps=0.8",
         os.path.join(out_dir, "%06d.jpg"),
     ]
     run_cmd(cmd, cwd=os.getcwd())
