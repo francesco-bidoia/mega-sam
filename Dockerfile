@@ -55,6 +55,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN conda run -n mega_sam python setup.py install
 
+
+# For visualization only
+RUN conda run -n mega_sam pip install viser
+
 WORKDIR /mega_sam
 ENV PYTHONPATH="/mega_sam/UniDepth:$PYTHONPATH"
 
